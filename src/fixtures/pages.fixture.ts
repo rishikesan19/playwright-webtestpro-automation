@@ -11,7 +11,7 @@ import { ProductDetailsPage } from '@pages/ProductDetailsPage';
 import { ProductsPage } from '@pages/ProductsPage';
 import { SignupPage } from '@pages/SignupPage';
 import { createLogger } from '@utils/logger';
-import { blockThirdPartyAds } from '@utils/networkBlocker';
+import { blockThirdPartyAds, stubProductImages } from '@utils/networkBlocker';
 
 const log = createLogger('site-health');
 
@@ -37,6 +37,7 @@ export const test = base.extend<PageFixtures & InfrastructureFixtures>({
   // Overriding `context` guarantees the route is registered before the first page is created.
   context: async ({ context }, use) => {
     if (env.blockThirdPartyAds) await blockThirdPartyAds(context);
+    if (env.stubProductImages) await stubProductImages(context);
     await use(context);
   },
 

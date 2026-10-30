@@ -29,6 +29,7 @@ export interface EnvironmentConfig {
   readonly testUserPassword: string | undefined;
   readonly apiResponseTimeLimitMs: number;
   readonly blockThirdPartyAds: boolean;
+  readonly stubProductImages: boolean;
   readonly logLevel: LogLevel;
   readonly isCI: boolean;
   readonly workers: number | undefined;
@@ -82,6 +83,7 @@ export const env: EnvironmentConfig = Object.freeze({
   testUserPassword: process.env.TEST_USER_PASSWORD || undefined,
   apiResponseTimeLimitMs: readInt('API_RESPONSE_TIME_LIMIT_MS', 3000) ?? 3000,
   blockThirdPartyAds: readBool('BLOCK_THIRD_PARTY_ADS', true),
+  stubProductImages: readBool('STUB_PRODUCT_IMAGES', true),
   logLevel: readLogLevel(),
   isCI: readBool('CI', false),
   workers: readInt('WORKERS'),
