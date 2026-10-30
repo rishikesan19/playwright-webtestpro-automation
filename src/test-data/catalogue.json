@@ -1,0 +1,27 @@
+{
+  "search": {
+    "term": "jean",
+    "expectedProducts": ["Soft Stretch Jeans", "Regular Fit Straight Jeans", "Grunt Blue Slim Fit Jeans"],
+    "unmatchedTerm": "zz-no-such-product-zz"
+  },
+  "categories": {
+    "womenDress": { "group": "Women", "name": "Dress", "id": 1, "title": "Women - Dress Products" },
+    "menJeans": { "group": "Men", "name": "Jeans", "id": 6, "title": "Men - Jeans Products" },
+    "kidsTopsShirts": {
+      "group": "Kids",
+      "name": "Tops & Shirts",
+      "id": 5,
+      "title": "Kids - Tops & Shirts Products"
+    }
+  },
+  "brands": [
+    "Polo",
+    "H&M",
+    "Madame",
+    "Mast & Harbour",
+    "Babyhug",
+    "Allen Solly Junior",
+    "Kookie Kids",
+    "Biba"
+  ]
+}

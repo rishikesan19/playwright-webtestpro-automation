@@ -1,0 +1,7 @@
+{
+  "message": {
+    "subject": "WebTestPro automated enquiry",
+    "message": "This message was submitted by an automated test. No response is required."
+  },
+  "attachment": "uploads/sample-attachment.txt"
+}

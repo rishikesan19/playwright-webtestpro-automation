@@ -1,0 +1,182 @@
+name: WebTestPro CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Nightly regression run (03:00 UTC) to catch changes on the live site.
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      grep:
+        description: 'Only run tests matching this pattern (e.g. @smoke). Leave empty for all.'
+        required: false
+        default: ''
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CI: 'true'
+  # Read by playwright.config.ts; set repository variables to point the suite elsewhere.
+  BASE_URL: ${{ vars.BASE_URL || 'https://automationexercise.com' }}
+  API_BASE_URL: ${{ vars.API_BASE_URL || 'https://automationexercise.com/api' }}
+  # Optional fixed password for generated users, stored as a repository secret (never committed).
+  TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+  GREP: ${{ github.event.inputs.grep || '' }}
+
+jobs:
+  quality:
+    name: Lint, format & type check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: ESLint
+        run: npm run lint
+      - name: Prettier
+        run: npm run format:check
+      - name: TypeScript
+        run: npm run typecheck
+
+  api-tests:
+    name: API tests
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # API tests use APIRequestContext only, so no browser download is needed.
+      - name: Run API tests
+        env:
+          REPORT_ID: api
+        # The grep input is passed via env (not interpolated into the script) to prevent injection.
+        run: |
+          args=(--project=api)
+          if [ -n "$GREP" ]; then args+=(--grep "$GREP"); fi
+          npx playwright test "${args[@]}"
+      - name: Upload blob report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: blob-report-api
+          path: reports/blob
+          retention-days: 7
+      - name: Upload JUnit results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-api
+          path: reports/junit
+          retention-days: 7
+
+  ui-tests:
+    name: UI tests (${{ matrix.project }})
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      # Let every browser finish so one failing browser does not hide results from the others.
+      fail-fast: false
+      matrix:
+        include:
+          - project: chromium
+            browser: chromium
+          - project: firefox
+            browser: firefox
+          - project: webkit
+            browser: webkit
+          - project: mobile-chrome
+            browser: chromium
+          - project: mobile-safari
+            browser: webkit
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright browser (${{ matrix.browser }})
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Run UI tests
+        env:
+          REPORT_ID: ${{ matrix.project }}
+          PROJECT: ${{ matrix.project }}
+        run: |
+          args=(--project="$PROJECT")
+          if [ -n "$GREP" ]; then args+=(--grep "$GREP"); fi
+          npx playwright test "${args[@]}"
+      - name: Upload blob report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: blob-report-${{ matrix.project }}
+          path: reports/blob
+          retention-days: 7
+      - name: Upload JUnit results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-${{ matrix.project }}
+          path: reports/junit
+          retention-days: 7
+      # Screenshots, videos and traces are only produced for failing/retried tests.
+      - name: Upload failure artifacts
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: failure-artifacts-${{ matrix.project }}
+          path: test-results
+          retention-days: 14
+
+  report:
+    name: Merge HTML report
+    needs: [api-tests, ui-tests]
+    # Merge whatever the test jobs produced, even when tests failed; skip if they never ran.
+    if: ${{ !cancelled() && (needs.api-tests.result != 'skipped' || needs.ui-tests.result != 'skipped') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Download blob reports
+        uses: actions/download-artifact@v5
+        with:
+          path: reports/blob
+          pattern: blob-report-*
+          merge-multiple: true
+      - name: Merge into a single HTML report
+        run: npm run report:merge
+      - name: Upload HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: html-report
+          path: reports/html
+          retention-days: 14
+      - name: Upload merged JUnit results
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-merged
+          path: reports/junit
+          retention-days: 14

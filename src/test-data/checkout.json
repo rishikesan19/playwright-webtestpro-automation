@@ -1,0 +1,10 @@
+{
+  "testCard": {
+    "nameOnCard": "WebTestPro Test",
+    "cardNumber": "4111111111111111",
+    "cvc": "123",
+    "expiryMonth": "12",
+    "expiryYear": "2035"
+  },
+  "orderComment": "Automated order placed by WebTestPro - please ignore."
+}

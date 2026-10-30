@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "user-detail",
+  "title": "User detail response (getUserDetailByEmail)",
+  "type": "object",
+  "required": ["responseCode", "user"],
+  "additionalProperties": false,
+  "properties": {
+    "responseCode": { "type": "integer" },
+    "user": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "email",
+        "title",
+        "birth_day",
+        "birth_month",
+        "birth_year",
+        "first_name",
+        "last_name",
+        "company",
+        "address1",
+        "address2",
+        "country",
+        "state",
+        "city",
+        "zipcode"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "integer", "minimum": 1 },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "title": { "type": "string" },
+        "birth_day": { "type": "string" },
+        "birth_month": { "type": "string" },
+        "birth_year": { "type": "string" },
+        "first_name": { "type": "string" },
+        "last_name": { "type": "string" },
+        "company": { "type": "string" },
+        "address1": { "type": "string" },
+        "address2": { "type": "string" },
+        "country": { "type": "string" },
+        "state": { "type": "string" },
+        "city": { "type": "string" },
+        "zipcode": { "type": "string" }
+      }
+    }
+  }
+}
